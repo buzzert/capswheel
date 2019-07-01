@@ -6,6 +6,11 @@ I wrote this for my [GPD Pocket](https://gpd.hk/gpdpocket), which is a cool tiny
 By default, you hold the (useless) caps lock key and move your finger along the touchpad to scroll. You might want to also disable the caps lock key in Xorg via:
     setxkbmap -option caps:none
 
+## Requirements
+- `base-devel`
+- `libpthread`
+- [`interception-tools`](https://gitlab.com/interception/linux/tools)
+
 ## Installation
 1. Run `make`
 2. Configure which keyboard and mouse device to watch in `capswheel.service`. If you're running this on a GPD Pocket 2, the defaults should work for you. Check inside of `/dev/input/by-id` for the correct one for your machine.
