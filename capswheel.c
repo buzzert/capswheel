@@ -4,7 +4,7 @@
  * by buzzert <buzzert@buzzert.net> 30 Jun 2019
  *
  * Run with intercept-tools:
- * intercept -g $MOUSE | capswheel | uinput -d $MOUSE
+ * intercept -g $MOUSE | capswheel [keyboard_input] | uinput -d $MOUSE
  *
  * where $MOUSE is the trackpoint/mouse path in /dev/input
  */
