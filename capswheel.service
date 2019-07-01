@@ -1,0 +1,16 @@
+[Unit]
+Description=Activate caps lock to scroll
+
+[Service]
+Environment=MOUSE=usb-HAILUCK_CO._LTD_USB_KEYBOARD-if01-event-mouse 
+Environment=KEYBOARD=usb-HAILUCK_CO._LTD_USB_KEYBOARD-event-kbd
+
+ExecStart=sh -c 'intercept -g /dev/input/by-id/$MOUSE | \
+/usr/local/bin/capswheel /dev/input/by-id/$KEYBOARD \
+| uinput -d /dev/input/by-id/$MOUSE'
+
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+
