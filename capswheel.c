@@ -9,21 +9,28 @@
  * where $MOUSE is the trackpoint/mouse path in /dev/input
  */
 
+#include <errno.h>
 #include <fcntl.h>
+#include <linux/input.h>
+#include <linux/input-event-codes.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <linux/input.h>
-#include <linux/input-event-codes.h>
 
 #define SCROLL_MODIFIER_KEY KEY_CAPSLOCK
 #define SCROLL_ACCUMULATION_AMOUNT 20
 
 static bool __modifier_held = false;
+
+typedef enum {
+    DIRECTION_X,
+    DIRECTION_Y
+} scroll_direction_t;
 
 static inline void
 send_event(uint16_t type, uint16_t code, int32_t value)
@@ -37,7 +44,7 @@ send_event(uint16_t type, uint16_t code, int32_t value)
     fwrite(&event, sizeof(event), 1, stdout);
 }
 
-void send_wheel_event(int amount)
+void send_wheel_event(int amount, scroll_direction_t direction)
 {
     static uint32_t accumulator;
 
@@ -47,12 +54,19 @@ void send_wheel_event(int amount)
     // Reset accumulator
     accumulator = 0;
 
+    uint16_t code = REL_WHEEL;
+    uint16_t hires_code = REL_WHEEL_HI_RES;
+    if (direction == DIRECTION_X) {
+        code = REL_HWHEEL;
+        hires_code = REL_HWHEEL_HI_RES;
+    }
+
     // Send mousewheel event
-    int direction = (amount < 0) ? 1 : -1;
-    send_event(EV_REL, REL_WHEEL, direction);
+    int normalized = (amount < 0) ? 1 : -1;
+    send_event(EV_REL, code, normalized);
 
     // Send hires wheel event
-    send_event(EV_REL, REL_WHEEL_HI_RES, amount);
+    send_event(EV_REL, hires_code, amount);
 
     // Send SYN event separator
     send_event(EV_SYN, 0, 0);
@@ -63,7 +77,7 @@ void* keyboard_watch_loop(void *userdata)
     const char *keyboard_path = (const char *)userdata;
     FILE *kbfd = fopen(keyboard_path, "r");
     if (!kbfd) {
-        fprintf(stderr, "Unable to open keyboard at path: %s\n", keyboard_path);
+        fprintf(stderr, "Unable to open keyboard: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -89,10 +103,15 @@ void read_loop(void)
 
         // Watch for mouse events
         if (event.type != EV_REL) continue;
-        if (event.code != REL_Y) continue;
+        if (event.code != REL_Y && event.code != REL_X) continue;
+
+        scroll_direction_t direction = DIRECTION_Y;
+        if (event.code == REL_X) {
+            direction = DIRECTION_X;
+        }
 
         int32_t value = event.value;
-        send_wheel_event(value);
+        send_wheel_event(value, direction);
     }
 }
 
